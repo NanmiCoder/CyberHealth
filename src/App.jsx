@@ -218,35 +218,63 @@ const SectionHeader = ({ title, subtitle }) => (
   </div>
 );
 
-const TaskCard = ({ task, isCompleted, onToggle, delay }) => (
-  <div
-    className={`glass-card rounded-lg p-4 flex items-center justify-between gap-4 transition-all duration-500 hover:bg-white/10 animate-glitch
-      ${isCompleted ? 'border-emerald-500/30 bg-emerald-900/10' : ''}`}
-    style={{ animationDelay: `${delay * 0.08}s` }}
-  >
-    <div className="flex-1">
-      <div className="flex items-center gap-2 mb-1">
-        <Tag type={task.tag} />
-        {task.important && <AlertTriangle className="w-3 h-3 text-rose-400" />}
-      </div>
-      <h3 className={`font-bold ${isCompleted ? 'text-emerald-400 line-through decoration-emerald-500/50' : 'text-slate-100'}`}>
-        {task.title}
-      </h3>
-      {task.desc && <p className="text-sm text-slate-400 mt-1 leading-relaxed">{task.desc}</p>}
-    </div>
+const TaskCard = ({ task, isCompleted, onToggle, delay, placeholder }) => {
+  const clickable = !!onToggle && !placeholder;
 
-    <button
-      type="button"
-      onClick={() => onToggle(task.id)}
-      className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all active:scale-[0.85] duration-200
-        ${isCompleted
-          ? 'bg-emerald-500 border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)]'
-          : 'bg-transparent border-slate-600 hover:border-cyan-400 hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]'}`}
+  return (
+    <div
+      className={`glass-card rounded-lg p-4 flex items-center justify-between gap-4 transition-all duration-500 animate-glitch
+        ${isCompleted && !placeholder ? 'border-emerald-500/30 bg-emerald-900/10' : ''}
+        ${clickable ? 'hover:bg-white/10 cursor-pointer' : 'opacity-70'}`}
+      style={{ animationDelay: `${delay * 0.08}s` }}
+      onClick={clickable ? () => onToggle(task.id) : undefined}
+      onKeyDown={
+        clickable
+          ? (event) => {
+              if (event.key === 'Enter') onToggle(task.id);
+            }
+          : undefined
+      }
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : -1}
     >
-      {isCompleted ? <CheckCircle2 className="w-6 h-6 text-white" /> : <Circle className="w-6 h-6 text-slate-500" />}
-    </button>
-  </div>
-);
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <Tag type={task.tag} />
+          {task.important && <AlertTriangle className="w-3 h-3 text-rose-400" />}
+          {placeholder && <span className="text-[10px] text-slate-500 font-mono">占位</span>}
+        </div>
+        <h3
+          className={`font-bold ${
+            isCompleted && !placeholder ? 'text-emerald-400 line-through decoration-emerald-500/50' : 'text-slate-100'
+          }`}
+        >
+          {task.title}
+        </h3>
+        {task.desc && <p className="text-sm text-slate-400 mt-1 leading-relaxed">{task.desc}</p>}
+      </div>
+
+      <button
+        type="button"
+        disabled={!clickable}
+        onClick={clickable ? () => onToggle(task.id) : undefined}
+        className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-200
+          ${clickable ? 'active:scale-[0.85]' : 'opacity-60'}
+          ${
+            isCompleted && !placeholder
+              ? 'bg-emerald-500 border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)]'
+              : 'bg-transparent border-slate-600 hover:border-cyan-400 hover:shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+          }`}
+      >
+        {isCompleted && !placeholder ? (
+          <CheckCircle2 className="w-6 h-6 text-white" />
+        ) : (
+          <Circle className="w-6 h-6 text-slate-500" />
+        )}
+      </button>
+    </div>
+  );
+};
 
 const DashboardView = ({ schedule, completedTasks, toggleTask, progress, onReset }) => {
   const sectionTotals = useMemo(
@@ -255,8 +283,8 @@ const DashboardView = ({ schedule, completedTasks, toggleTask, progress, onReset
         (acc, section) => ({
           ...acc,
           [section.period]: {
-            done: section.tasks.filter((task) => completedTasks[task.id]).length,
-            total: section.tasks.length,
+            done: section.tasks.filter((task) => !task.placeholder && completedTasks[task.id]).length,
+            total: section.tasks.filter((task) => !task.placeholder).length,
           },
         }),
         {},
@@ -326,8 +354,9 @@ const DashboardView = ({ schedule, completedTasks, toggleTask, progress, onReset
                       key={task.id}
                       task={task}
                       isCompleted={!!completedTasks[task.id]}
-                      onToggle={toggleTask}
+                      onToggle={task.placeholder ? undefined : toggleTask}
                       delay={idx * 3 + tIdx}
+                      placeholder={task.placeholder}
                     />
                   ))}
                 </div>
@@ -495,6 +524,35 @@ export default function App() {
     [],
   );
 
+  const paddedSchedule = useMemo(
+    () =>
+      dailySchedule.map((section) =>
+        section.period === 'noon'
+          ? {
+              ...section,
+              tasks: [
+                ...section.tasks,
+                {
+                  id: 'n_pad1',
+                  title: '占位：午后短暂步行',
+                  desc: '3-5分钟轻量活动，促进循环，避免嗜睡。',
+                  tag: '行为',
+                  placeholder: true,
+                },
+                {
+                  id: 'n_pad2',
+                  title: '占位：温水补给',
+                  desc: '200-300ml 温水，避开咖啡/浓茶/碳酸饮料。',
+                  tag: '行为',
+                  placeholder: true,
+                },
+              ],
+            }
+          : section,
+      ),
+    [],
+  );
+
   const totalCoreTasks = useMemo(
     () => dailySchedule.reduce((acc, section) => acc + section.tasks.filter((t) => t.tag !== '按需').length, 0),
     [],
@@ -595,7 +653,7 @@ export default function App() {
       <main className="pt-6 px-4 max-w-7xl mx-auto min-h-screen">
         {activeTab === 'schedule' && (
           <DashboardView
-            schedule={dailySchedule}
+            schedule={paddedSchedule}
             completedTasks={completedTasks}
             toggleTask={toggleTask}
             progress={progress}
