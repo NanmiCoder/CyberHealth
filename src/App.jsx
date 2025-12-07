@@ -585,7 +585,14 @@ export default function App() {
         </div>
       </header>
 
-      <main className="pt-24 px-4 max-w-7xl mx-auto min-h-screen">
+      <div className="mt-16 px-4 max-w-7xl mx-auto">
+        <div className="glass-card border border-amber-500/30 text-amber-200 rounded-xl p-3 text-sm font-mono flex items-center gap-3 shadow-[0_10px_40px_rgba(245,158,11,0.15)]">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <span>学习演示用途，不是专业医疗或用药建议；请遵循医生/药师指导。</span>
+        </div>
+      </div>
+
+      <main className="pt-6 px-4 max-w-7xl mx-auto min-h-screen">
         {activeTab === 'schedule' && (
           <DashboardView
             schedule={dailySchedule}
