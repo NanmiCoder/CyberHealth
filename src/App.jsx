@@ -297,13 +297,17 @@ const DashboardView = ({ schedule, completedTasks, toggleTask, progress, onReset
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 grid-flow-row-dense auto-rows-[160px]">
+      <div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 grid-flow-row-dense"
+        style={{ gridAutoRows: 'minmax(140px, auto)' }}
+      >
         {schedule.map((section, idx) => {
           const colorKey = section.color.split('-')[1];
           const palette = paletteMap[colorKey] || paletteMap.default;
           const done = sectionTotals[section.period]?.done || 0;
           const total = sectionTotals[section.period]?.total || section.tasks.length;
-          const rowSpan = Math.max(2, section.tasks.length + 1);
+          const estimatedHeight = section.tasks.length * 90 + 140; // rough: 90 per task + header/padding
+          const rowSpan = Math.max(2, Math.ceil(estimatedHeight / 140));
 
           return (
             <div
